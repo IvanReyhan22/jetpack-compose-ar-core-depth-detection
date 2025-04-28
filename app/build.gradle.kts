@@ -70,10 +70,9 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.camera.extensions)
 
-    // TensorFlow Lite dependencies
-    implementation(libs.tensorflow.lite)
-    implementation(libs.tensorflow.lite.gpu)
-    implementation(libs.tensorflow.lite.support)
+    /// ar core
+    implementation(libs.ar.core)
+//    implementation(libs.sceneform.ux)
 
     // Accompanist for permissions
     implementation(libs.accompanist.permissions)
