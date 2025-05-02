@@ -2,11 +2,9 @@ package id.personal.depthdetector.ui.features.screens.depth.views.compontents
 
 import android.opengl.GLES11Ext
 import android.opengl.GLES30
-import android.opengl.Matrix
 import com.google.ar.core.Frame
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.FloatBuffer
 
 class BackgroundRenderer {
 
