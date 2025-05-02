@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,10 +33,12 @@ import java.util.concurrent.Executors
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun DepthPage(
+fun ARPage(
     viewModel: ARViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
 ) {
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    val arCoreAvailable by viewModel.arCoreAvailable.collectAsState()
 
     /// camera permission state
     val cameraPermissionState = rememberPermissionState(
@@ -52,14 +56,20 @@ fun DepthPage(
             cameraExecutor.shutdown()
         }
     }
-
-    if (cameraPermissionState.status.isGranted) {
+    if (cameraPermissionState.status.isGranted && arCoreAvailable) {
         Box(
             Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            ARCameraPreview(onInitializeArSession = { viewModel.initializeArSession() })
-            ARDistanceDisplay(viewModel)
+            ARCameraPreview(
+                viewModel = viewModel,
+                onFrameReceived = { frame -> }
+            )
+
+            ARDistanceDisplay(
+                viewModel = viewModel,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     } else {
         /// permission denied
@@ -71,13 +81,19 @@ fun DepthPage(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Camera permission is required for depth detection",
+                if (arCoreAvailable)
+                    "AR Service is not available in this device"
+                else
+                    "Camera permission is required for depth detection",
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
-                Text("Request permission")
+            if (arCoreAvailable) {
+                Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
+                    Text("Request permission")
+                }
             }
+
         }
     }
 }

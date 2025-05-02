@@ -9,11 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import id.personal.depthdetector.ui.features.screens.depth.views.pages.DepthPage
+import id.personal.depthdetector.ui.features.screens.depth.views.pages.ARPage
 import id.personal.depthdetector.ui.theme.DepthDetectorTheme
 
 class MainActivity : ComponentActivity() {
@@ -27,7 +24,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        DepthPage()
+                        ARPage()
                     }
                 }
             }
