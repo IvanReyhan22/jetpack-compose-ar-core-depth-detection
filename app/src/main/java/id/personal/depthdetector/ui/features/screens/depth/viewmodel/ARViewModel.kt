@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import com.google.ar.core.ArCoreApk
+import com.google.ar.core.AugmentedImageDatabase
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.Plane
@@ -13,13 +14,13 @@ import com.google.ar.core.TrackingState
 import com.google.ar.core.exceptions.CameraNotAvailableException
 import com.google.ar.core.exceptions.UnavailableApkTooOldException
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
+import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException
 import id.personal.depthdetector.ui.features.screens.depth.states.ProximityLevel
 import id.personal.depthdetector.utils.helpers.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlin.math.roundToInt
 
 @SuppressLint("StaticFieldLeak")
 class ARViewModel(
@@ -34,9 +35,6 @@ class ARViewModel(
 
     private val _proximityLevel = MutableStateFlow<ProximityLevel>(ProximityLevel.UNKNOWN)
     val proximityLevel: StateFlow<ProximityLevel> = _proximityLevel.asStateFlow()
-
-    private val _planesDetected = MutableStateFlow(false)
-    val planesDetected: StateFlow<Boolean> = _planesDetected.asStateFlow()
 
     var arSession: Session? = null
 
@@ -83,19 +81,35 @@ class ARViewModel(
     fun createARSession() {
         if (arSession == null) {
             try {
+                /// initiate new session & config
                 val session = Session(context)
                 val config = Config(session)
-                if(session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)){
+
+                // Load the image database (.imgdb file)
+                val imageDatabase = context.assets.open("sample.imgdb").use {
+                    AugmentedImageDatabase.deserialize(session, it)
+                }
+
+                /// check if device support depth API
+                if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
                     config.depthMode = Config.DepthMode.AUTOMATIC
-                }else {
+                } else {
                     config.depthMode = Config.DepthMode.DISABLED
                 }
-                config.updateMode = Config.UpdateMode.LATEST_CAMERA_IMAGE
-                config.focusMode = Config.FocusMode.AUTO
+
+                /// ar core configuration
+                /// configure augmentedImageDatabase
+                config.augmentedImageDatabase = imageDatabase
+
+                /// detection behaviour
                 config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
                 config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+
+                /// camera behaviour
                 config.updateMode = Config.UpdateMode.LATEST_CAMERA_IMAGE
                 config.focusMode = Config.FocusMode.AUTO
+
+                /// apply config
                 session.configure(config)
                 arSession = session
             } catch (e: UnavailableArcoreNotInstalledException) {
@@ -139,7 +153,7 @@ class ARViewModel(
             if (it.camera.trackingState != TrackingState.TRACKING) {
                 _distance.value = null
                 _proximityLevel.value = ProximityLevel.UNKNOWN
-//                Logger.logInfo("ARViewModel -> Camera not tracking ${it.camera.trackingState} :: ${it.camera.trackingFailureReason}")
+                Logger.logInfo("ARViewModel -> Camera not tracking ${it.camera.trackingState} :: ${it.camera.trackingFailureReason}")
                 return
             }
 
@@ -153,18 +167,18 @@ class ARViewModel(
                     break
                 }
             }
-            _planesDetected.value = hasPlanes
 
             // Get the pose of the device
             val cameraPose = it.camera.pose
 
-            // Get screen
+            // Get screen spec
             val screen = context.resources.displayMetrics
-            // Check if hit test is possible
+
+            // Detect object in the center of image preview
             val hitResults = frame.hitTest(screen.widthPixels / 2f, screen.heightPixels / 2f)
 
             if (hitResults.isNotEmpty()) {
-                // Get the closest hit result
+                // Get the first hit result
                 val hitResult = hitResults[0]
                 val hitPose = hitResult.hitPose
 
@@ -201,32 +215,4 @@ class ARViewModel(
         val dz = pose1.tz() - pose2.tz()
         return kotlin.math.sqrt(dx * dx + dy * dy + dz * dz)
     }
-
-    // Format distance for display (meters or centimeters)
-    fun getFormattedDistance(): String {
-        val currentDistance = distance.value ?: return "Distance: unknown"
-
-        return when {
-            currentDistance < 1.0f -> {
-                // Display in centimeters if less than 1 meter
-                val cm = (currentDistance * 100).roundToInt()
-                "Distance: $cm cm"
-            }
-
-            else -> {
-                // Display in meters if 1 meter or more
-                val roundedMeter = (currentDistance * 10).roundToInt() / 10f
-                "Distance: $roundedMeter m"
-            }
-        }
-    }
-
-    fun getFullDistanceInfo(): String {
-        val currentDistance = distance.value ?: return "Distance: unknown"
-        val cm = (currentDistance * 100).roundToInt()
-        val roundedMeter = (currentDistance * 10).roundToInt() / 10f
-
-        return "Distance: $roundedMeter m ($cm cm)\nProximity: ${proximityLevel.value}"
-    }
-
 }

@@ -7,8 +7,10 @@ import android.opengl.GLSurfaceView
 import android.os.Build
 import android.view.Surface
 import android.view.WindowManager
+import com.google.ar.core.AugmentedImage
 import com.google.ar.core.Frame
 import com.google.ar.core.Session
+import com.google.ar.core.TrackingState
 import com.google.ar.core.exceptions.CameraNotAvailableException
 import id.personal.depthdetector.utils.helpers.Logger
 import javax.microedition.khronos.egl.EGLConfig
@@ -99,6 +101,28 @@ class ARRenderer(
         try {
             // Update the AR session and get the current frame
             val frame = session.update()
+            // Track augmented images
+            val updatedImages =
+                frame.getUpdatedTrackables(AugmentedImage::class.java)
+
+            // Track augmented images
+            for (image in updatedImages) {
+                when (image.trackingState) {
+                    TrackingState.TRACKING -> {
+                        val centerPose = image.centerPose
+                        Logger.logInfo("ARCore -> Image detected: ${image.name}, position: $centerPose")
+                    }
+
+                    TrackingState.PAUSED -> {
+                        Logger.logInfo("ARCore -> Image tracking paused: ${image.name}")
+                    }
+
+                    else -> {
+                        Logger.logInfo("ARCore -> Image not tracked: ${image.name}")
+                    }
+                }
+            }
+
             backgroundRenderer.updateTextureMatrix(frame)
             backgroundRenderer.draw()
             // Process the frame

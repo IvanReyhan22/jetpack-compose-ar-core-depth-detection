@@ -11,11 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,15 +27,13 @@ import id.personal.depthdetector.ui.features.screens.depth.viewmodel.ARViewModel
 import id.personal.depthdetector.ui.features.screens.depth.views.compontents.ARCameraPreview
 import id.personal.depthdetector.ui.features.screens.depth.views.compontents.ARDistanceDisplay
 import id.personal.depthdetector.utils.helpers.ViewModelFactory
-import java.util.concurrent.Executors
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun ARPage(
     viewModel: ARViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
 ) {
-    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-
+    /// is device support ar core flag
     val arCoreAvailable by viewModel.arCoreAvailable.collectAsState()
 
     /// camera permission state
@@ -50,22 +46,18 @@ fun ARPage(
         cameraPermissionState.launchPermissionRequest()
     }
 
-    /// handle cleanup
-    DisposableEffect(Unit) {
-        onDispose {
-            cameraExecutor.shutdown()
-        }
-    }
     if (cameraPermissionState.status.isGranted && arCoreAvailable) {
         Box(
             Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
+            /// AR View
             ARCameraPreview(
                 viewModel = viewModel,
                 onFrameReceived = { frame -> }
             )
 
+            /// Distance Overlay
             ARDistanceDisplay(
                 viewModel = viewModel,
                 modifier = Modifier.align(Alignment.BottomCenter)
