@@ -85,21 +85,12 @@ class ARViewModel(
                 val session = Session(context)
                 val config = Config(session)
 
-                // Load the image database (.imgdb file)
-                val imageDatabase = context.assets.open("sample.imgdb").use {
-                    AugmentedImageDatabase.deserialize(session, it)
-                }
-
                 /// check if device support depth API
                 if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
                     config.depthMode = Config.DepthMode.AUTOMATIC
                 } else {
                     config.depthMode = Config.DepthMode.DISABLED
                 }
-
-                /// ar core configuration
-                /// configure augmentedImageDatabase
-                config.augmentedImageDatabase = imageDatabase
 
                 /// detection behaviour
                 config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
